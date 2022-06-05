@@ -90,7 +90,8 @@ public final class RegionHandler implements Router {
         
         // Create a config object.
         byte[] customConfig = "{\"sdkenv\":\"2\",\"checkdevice\":\"false\",\"loadPatch\":\"false\",\"showexception\":\"false\",\"regionConfig\":\"pm|fk|add\",\"downloadMode\":\"0\"}".getBytes();
-        Crypto.xor(customConfig, Crypto.DISPATCH_KEY); // XOR the config with the key.
+        // Crypto.xor(customConfig, Crypto.DISPATCH_KEY); // XOR the config with the key.
+        Crypto.xor(customConfig, Crypto.DISPATCH_KEY, false);
         
         // Create an updated region list.
         QueryRegionListHttpRsp updatedRegionList = QueryRegionListHttpRsp.newBuilder()
@@ -127,18 +128,26 @@ public final class RegionHandler implements Router {
     private static void queryCurrentRegion(Request request, Response response) {
         // Get region to query.
         String regionName = request.params("region");
+        String versionName = request.query("version");
+        var region = regions.get(regionName);
         
         // Get region data.
         String regionData = "CAESGE5vdCBGb3VuZCB2ZXJzaW9uIGNvbmZpZw==";
         if (request.query().values().size() > 0) {
-            var region = regions.get(regionName);
+            // var region = regions.get(regionName);
             if(region != null) regionData = region.getBase64();
         }
         
-        // Invoke event.
-        QueryCurrentRegionEvent event = new QueryCurrentRegionEvent(regionData); event.call();
-        // Respond with event result.
-        response.send(event.getRegionInfo());
+        if (versionName.contains("2.7.5") || versionName.contains("2.8.")) {
+            var rsp = "{\"content\":\"rr9YPwJ0RHy8ZBaV9yMb1ZV0b8XGN3nEYdns/mjc4cke1pxcYt9nfqgDfNKVqod0zBHc/SBWS7smIdnvr/Y2zmyCwU4NGtK7oMPzgEfURalLbSj+k4fhI1GkH3pki4kTtiISPj2RuJAN5KLZ1ANZhIxHVOb2nbHED9gzkIhwkk5GaTIE4H6OIE+3eorFiMKwX7e1jsnCSGWZ3V/3NszzSP+j0LHwyeyLm9rghRgRiVbIlhYheNNwPLeQ/EA5iRHuU4uxLLdb/jl47iNgB24uS/BfIPWDKeCubcYJJ8xfPE2fFuqZ5495vPmJOfX3tnxrBFuNQ3oUSGp1wdh9CalIlw==\",\"sign\":\"gK2Q0wgTjqtnuffdFLyC6TYqwMhrdWRy3DaeQPQquFEVPOqSU9E7WoYhKa/jbHhQJVqpBzo+Kmi8Mn+0MZu8qhlhWw0lTCtr8/DYX13qqwYyfSlXSdkJ+lfCqtykMeJmmVM4QzazL4mjFIIQ3dlBg7OaMooBcX29BO3eucPIiL1BRv9Q4BhPMlYfFLReKqDSJZzvLOl8WAEsEPuEPF26zKJ2EFOvFmeTgLqqk8vvc7k3EnIKbGZlMeNfx2pjGeTpmsRafGTLwpJWlGBHsPSfrpTENLLtxh6uFIDtjVqnIy8QQ3IXcmvFpgdwAYlJdvD31qSWet2Pzbe3wQATQelyNA==\"}";
+            response.send(rsp);
+        } else {
+            // Invoke event.
+            QueryCurrentRegionEvent event = new QueryCurrentRegionEvent(regionData);
+            event.call();
+            // Respond with event result.
+            response.send(event.getRegionInfo());
+        }
 
         // Log to console.
         Grasscutter.getLogger().info(String.format("Client %s request: query_cur_region/%s", request.ip(), regionName));
